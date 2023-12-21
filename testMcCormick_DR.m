@@ -1,0 +1,66 @@
+%% test McCormick
+clear all
+x1=sdpvar(1,1,'full');
+x2=sdpvar(1,1,'full');
+x3=sdpvar(1,1,'full');
+x4=sdpvar(1,1,'full');
+P1=sdpvar(1,1,'full');
+P2=sdpvar(1,1,'full');
+Y=sdpvar(1,1,'full');
+F=[];
+F1=[];
+F=F+(0<=x1<=10);
+F=F+(0<=x2<=30);
+F=F+(0<=x3<=70);
+F=F+(0<=x4<=20);
+F=F+(Y==x2+x3);
+X0=67;
+Rprop=sdpvar(1,1);
+F1=F1+(X0*Y+Rprop==x2*56+78*x3);
+x11=sdpvar(1,1,'full');
+x12=sdpvar(1,1,'full');
+Y1=sdpvar(1,1,'full');
+Y2=sdpvar(1,1,'full');
+x41=sdpvar(1,1,'full');
+x42=sdpvar(1,1,'full');
+F=F+(x11>=0);
+F=F+(x12>=0);
+F=F+(Y1>=0);
+F=F+(Y2>=0);
+F=F+(x41>=0);
+F=F+(x42>=0);
+F=F+(Y1>=0);
+F=F+(Y2>=0);
+F=F+(x1==x11+x12);
+F=F+(x4==x41+x42);
+F=F+(Y==Y1+Y2);
+F=F+(P1==x11+x41+Y1);
+F=F+(P2==x12+x42+Y2);
+RP1=sdpvar(1,1,'full');
+RP2=sdpvar(1,1,'full');
+F1=F1+(RP1==45*x11+98*x41+X0*Y1+0.5*Rprop);
+F1=F1+(RP2==45*x12+98*x42+X0*Y2+0.5*Rprop);
+F=F+(RP1>=70*P1);
+F=F+(RP2>=85*P2);
+OBJ=-1500*x1-1600*x2-2000*x3-2300*x4+2000*P1+2200*P2;
+ops=sdpsettings('solver','fmincon');
+sol=optimize(F+F1,-OBJ,ops)
+VRprop=1;
+iter=1;
+while VRprop>=10^-5
+    F1=[];
+    X0=X0+value(Rprop./Y);
+    F1=F1+(X0*Y+Rprop==x2*56+78*x3);
+    if value(Y)==0
+        F1=F1+(RP1==45*x11+98*x41+X0*Y1+0.5*Rprop);
+        F1=F1+(RP2==45*x12+98*x42+X0*Y2+0.5*Rprop);
+    else
+        F1=F1+(RP1==45*x11+98*x41+X0*Y1+value(Y1./Y)*Rprop);
+        F1=F1+(RP2==45*x12+98*x42+X0*Y2+value(Y2./Y)*Rprop);
+    end
+    VRprop=value(Rprop);
+    ops=sdpsettings('solver','fmincon');
+    sol=optimize(F+F1,-OBJ,ops)
+    iter=iter+1;
+end
+[{'x1','x11','x12','x2','x3','x4','x41','x42','P1','P2','X0','Y1','Y2','OBJ'};num2cell(value([x1,x11,x12,x2,x3,x4,x41,x42,P1,P2,X0,Y1,Y2,OBJ]))]

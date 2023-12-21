@@ -1,0 +1,107 @@
+%% test McCormick
+x1=sdpvar(1,1,'full');
+x2=sdpvar(1,1,'full');
+x3=sdpvar(1,1,'full');
+x4=sdpvar(1,1,'full');
+P1=sdpvar(1,1,'full');
+P2=sdpvar(1,1,'full');
+
+Y=sdpvar(1,1,'full');
+F=[];
+F=F+(0<=x1<=10);
+F=F+(0<=x2<=30);
+F=F+(0<=x3<=70);
+F=F+(0<=x4<=20);
+F=F+(Y==x2+x3);
+X=sdpvar(1,1,'full');
+XL=45;
+XU=120;
+YL=0;
+YU=999;
+W=x2*56+x3*78;
+F=F+(W>=XL*Y+X*YL-XL*YL);
+F=F+(W>=XU*Y+X*YU-XU*YU);
+F=F+(W<=XU*Y+X*YL-XU*YL);
+F=F+(W<=X*YU+XL*Y-XL*YU);
+x11=sdpvar(1,1,'full');
+x12=sdpvar(1,1,'full');
+Y1=sdpvar(1,1,'full');
+Y2=sdpvar(1,1,'full');
+x41=sdpvar(1,1,'full');
+x42=sdpvar(1,1,'full');
+F=F+(x11>=0);
+F=F+(x12>=0);
+F=F+(Y1>=0);
+F=F+(Y2>=0);
+F=F+(x41>=0);
+F=F+(x42>=0);
+F=F+(Y1>=0);
+F=F+(Y2>=0);
+F=F+(x1==x11+x12);
+F=F+(x4==x41+x42);
+F=F+(Y==Y1+Y2);
+F=F+(P1==x11+x41+Y1);
+F=F+(P2==x12+x42+Y2);
+RP1=sdpvar(1,1,'full');
+RP2=sdpvar(1,1,'full');
+W1=sdpvar(1,1,'full');
+W2=sdpvar(1,1,'full');
+F=F+(RP1==45*x11+98*x41+W1);
+F=F+(RP2==45*x12+98*x42+W2);
+R1=sdpvar(1,1,'full');
+R2=sdpvar(1,1,'full');
+F=F+(RP1>=70*P1);
+F=F+(RP2>=85*P2);
+WL=0;
+WU=99999;
+RL=0;
+RU=1;
+F0=[];
+F0=F0+(Y1>=YL*R1+Y*RL-YL*RL);
+F0=F0+(Y1>=YU*R1+Y*RU-YU*RU);
+F0=F0+(Y1<=YU*R1+Y*RL-YU*RL);
+F0=F0+(Y1<=Y*RU+YL*R1-YL*RU);
+F0=F0+(Y2>=YL*R1+Y*RL-YL*RL);
+F0=F0+(Y2>=YU*R1+Y*RU-YU*RU);
+F0=F0+(Y2<=YU*R1+Y*RL-YU*RL);
+F0=F0+(Y2<=Y*RU+YL*R1-YL*RU);
+F0=F0+(W1>=WL*R1+W*RL-WL*RL);
+F0=F0+(W1>=WU*R1+W*RU-WU*RU);
+F0=F0+(W1<=WU*R1+W*RL-WU*RL);
+F0=F0+(W1<=W*RU+WL*R1-WL*RU);
+F0=F0+(W2>=WL*R2+W*RL-WL*RL);
+F0=F0+(W2>=WU*R2+W*RU-WU*RU);
+F0=F0+(W2<=WU*R2+W*RL-WU*RL);
+F0=F0+(W2<=W*RU+WL*R2-WL*RU);
+F0=F0+(R1+R2==1);
+F0=F0+(R1>=0);
+F0=F0+(R2>=0);
+F0=F0+(W1>=XL*Y1+X*YL-XL*YL);
+F0=F0+(W1>=XU*Y1+X*YU-XU*YU);
+F0=F0+(W1<=XU*Y1+X*YL-XU*YL);
+F0=F0+(W1<=X*YU+XL*Y1-XL*YU);
+F0=F0+(W2>=XL*Y2+X*YL-XL*YL);
+F0=F0+(W2>=XU*Y2+X*YU-XU*YU);
+F0=F0+(W2<=XU*Y2+X*YL-XU*YL);
+F0=F0+(W2<=X*YU+XL*Y2-XL*YU);
+F0=F0+(W==W1+W2);
+
+OBJ=-1500*x1-1600*x2-2000*x3-2300*x4+2000*P1+2200*P2;
+ops=sdpsettings('solver','cplex');
+sol=optimize(F+F0,-OBJ,ops)
+[{'x1','x11','x12','x2','x3','x4','x41','x42','P1','P2','X','OBJ'};num2cell(value([x1,x11,x12,x2,x3,x4,x41,x42,P1,P2,X,OBJ]))]
+
+error=100;
+while error>=10^-5
+    Rprop=sdpvar(1,1,'full');
+    F1=[];
+    F1=F1+(W==value(W./Y).*Y+Rprop);
+    F1=F1+(W1==value(W./Y).*Y1+value(Y1)./value(Y).*Rprop);
+    F1=F1+(W2==value(W./Y).*Y2+value(Y2)./value(Y).*Rprop);
+    OBJ=-1500*x1-1600*x2-2000*x3-2300*x4+2000*P1+2200*P2;
+    X=W./Y
+    ops=sdpsettings('solver','cplex');
+    sol=optimize(F+F1,-OBJ,ops)
+    [{'x1','x11','x12','x2','x3','x4','x41','x42','P1','P2','X','OBJ'};num2cell(value([x1,x11,x12,x2,x3,x4,x41,x42,P1,P2,X,OBJ]))]
+    error=abs(value(Rprop./Y));
+end
